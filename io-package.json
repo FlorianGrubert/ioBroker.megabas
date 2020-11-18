@@ -1,0 +1,94 @@
+{
+	"common": {
+		"name": "megabas",
+		"version": "0.0.1",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"zh-cn": "首次出版"
+			}
+		},
+		"title": "Building Automation Stackable Card (megabas-rpi)",
+		"titleLang": {
+			"en": "Building Automation Stackable Card (megabas-rpi)",
+			"de": "Stapelbare Karte für die Gebäudeautomation (Megabas-RPI)",
+			"ru": "Стекируемая карта автоматизации зданий (мегабас-rpi)",
+			"pt": "Placa empilhável de automação predial (megabas-rpi)",
+			"nl": "Stapelbare kaart voor gebouwautomatisering (megabas-rpi)",
+			"fr": "Carte empilable d'automatisation de bâtiment (megabas-rpi)",
+			"it": "Scheda impilabile per automazione degli edifici (megabas-rpi)",
+			"es": "Tarjeta apilable de automatización de edificios (megabas-rpi)",
+			"pl": "Karta Building Automation Stackable (megabas-rpi)",
+			"zh-cn": "楼宇自动化可堆叠卡（megabas-rpi）"
+		},
+		"desc": {
+			"en": "Adapter to use the Building Automation Stackable Card for Raspberry Pi from Sequent Technologies",
+			"de": "Adapter zur Verwendung der stapelbaren Building Automation-Karte für Raspberry Pi von Sequent Technologies",
+			"ru": "Адаптер для использования стекируемой карты Building Automation для Raspberry Pi от Sequent Technologies",
+			"pt": "Adaptador para usar a placa empilhável de automação de edifícios para Raspberry Pi da Sequent Technologies",
+			"nl": "Adapter om de Building Automation Stackable Card voor Raspberry Pi van Sequent Technologies te gebruiken",
+			"fr": "Adaptateur pour utiliser la carte empilable Building Automation pour Raspberry Pi de Sequent Technologies",
+			"it": "Adattatore per utilizzare la Building Automation Stackable Card per Raspberry Pi di Sequent Technologies",
+			"es": "Adaptador para utilizar la tarjeta apilable de automatización de edificios para Raspberry Pi de Sequent Technologies",
+			"pl": "Adapter do użycia karty Building Automation Stackable dla Raspberry Pi firmy Sequent Technologies",
+			"zh-cn": "适配器以使用来自Sequent Technologies的Raspberry Pi的楼宇自动化可堆叠卡"
+		},
+		"authors": ["Florian Grubert <privat@fgrubert.de>"],
+		"keywords": ["megabas", "megabas-rpi", "sequent technologies", "building automation", "raspberry pi"],
+		"license": "MIT",
+		"platform": "Javascript/Node.js",
+		"main": "build/main.js",
+		"icon": "megabas.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/Florian Grubert/ioBroker.megabas/master/admin/megabas.png",
+		"readme": "https://github.com/Florian Grubert/ioBroker.megabas/blob/master/README.md",
+		"loglevel": "info",
+		"mode": "daemon",
+		"type": "hardware",
+		"compact": true,
+		"connectionType": "local",
+		"dataSource": "poll",
+		"materialize": true,
+		"dependencies": [
+			{
+				"js-controller": ">=2.0.0"
+			}
+		]
+	},
+	"native": {
+		"option1": true,
+		"option2": "42"
+	},
+	"objects": [],
+	"instanceObjects": [
+		{
+			"_id": "info",
+			"type": "channel",
+			"common": {
+				"name": "Information"
+			},
+			"native": {}
+		},
+		{
+			"_id": "info.connection",
+			"type": "state",
+			"common": {
+				"role": "indicator.connected",
+				"name": "Device or service connected",
+				"type": "boolean",
+				"read": true,
+				"write": false,
+				"def": false
+			},
+			"native": {}
+		}
+	]
+}
