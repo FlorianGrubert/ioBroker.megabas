@@ -6,7 +6,7 @@
     "name": "Florian Grubert",
     "email": "privat@fgrubert.de"
   },
-  "homepage": "https://github.com/Florian Grubert/ioBroker.megabas",
+  "homepage": "https://github.com/FlorianGrubert/ioBroker.megabas",
   "license": "MIT",
   "keywords": [
     "megabas",
@@ -17,7 +17,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Florian Grubert/ioBroker.megabas"
+    "url": "https://github.com/FlorianGrubert/ioBroker.megabas"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^2.4.0"
@@ -84,7 +84,7 @@
     "lint": "eslint --ext .ts,.tsx src/ admin/src/"
   },
   "bugs": {
-    "url": "https://github.com/Florian Grubert/ioBroker.megabas/issues"
+    "url": "https://github.com/FlorianGrubert/ioBroker.megabas/issues"
   },
   "readmeFilename": "README.md"
 }
