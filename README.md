@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/npm/dm/iobroker.megabas.svg)](https://www.npmjs.com/package/iobroker.megabas)
 ![Number of Installations (latest)](http://iobroker.live/badges/megabas-installed.svg)
 ![Number of Installations (stable)](http://iobroker.live/badges/megabas-stable.svg)
-[![Dependency Status](https://img.shields.io/david/FlorianGrubert/iobroker.megabas.svg)](https://david-dm.org/Florian Grubert/iobroker.megabas)
+[![Dependency Status](https://img.shields.io/david/FlorianGrubert/iobroker.megabas.svg)](https://david-dm.org/FlorianGrubert/iobroker.megabas)
 [![Known Vulnerabilities](https://snyk.io/test/github/FlorianGrubert/ioBroker.megabas/badge.svg)](https://snyk.io/test/github/FlorianGrubert/ioBroker.megabas)
 
 [![NPM](https://nodei.co/npm/iobroker.megabas.png?downloads=true)](https://nodei.co/npm/iobroker.megabas/)
