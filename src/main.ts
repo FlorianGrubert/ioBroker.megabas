@@ -51,9 +51,11 @@ class Megabas extends utils.Adapter {
 			maxStackLevel = 4;
 		}
 
+		this.stackableCards = new Array<StackableCard>(maxStackLevel);
 		for (let i = 0; i < maxStackLevel; i++) {
 			const card = new StackableCard(this, i);
 			card.InitializeIoBrokerObjects();
+			this.stackableCards[i] = card;
 		}
 
 		// Define the lighting devices to display in the channel list
@@ -82,6 +84,11 @@ class Megabas extends utils.Adapter {
 				write: true,
 			},
 			native: {},
+		});
+
+		// Subscribe to object updates for the stackable cards
+		this.stackableCards.forEach((card) => {
+			card.SubscribeStates();
 		});
 
 		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
