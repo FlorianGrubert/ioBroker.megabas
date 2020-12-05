@@ -22,9 +22,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Megabas = void 0;
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = __importStar(require("@iobroker/adapter-core"));
+const lightingDevice_1 = require("./lightingDevice");
 // Load your modules here, e.g.:
 // import * as fs from "fs";
 class Megabas extends utils.Adapter {
@@ -48,13 +50,28 @@ class Megabas extends utils.Adapter {
         this.setState("info.connection", false, true);
         // The adapters config (in the instance object everything under the attribute "native") is accessible via
         // this.config:
-        this.log.info("config option1: " + this.config.option1);
-        this.log.info("config option2: " + this.config.option2);
-        /*
-        For every state in the system there has to be also an object of type state
-        Here a simple template for a boolean variable named "testVariable"
-        Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-        */
+        this.log.info("config MaxStackLevel: " + this.config.MaxStackLevel);
+        this.log.info("config LightingDevices: " + this.config.LightingDevices);
+        // validate the maxStackLevel and set to valid values instead
+        let maxStackLevel = this.config.MaxStackLevel;
+        if (!maxStackLevel || maxStackLevel <= 0) {
+            maxStackLevel = 1;
+        }
+        if (maxStackLevel > 4) {
+            maxStackLevel = 4;
+        }
+        // Define the lighting devices to display in the channel list
+        const lightingDevices = new Array(0);
+        const splitDevices = this.config.LightingDevices.split(";");
+        splitDevices.forEach((dev) => {
+            lightingDevices.push(dev.trim());
+        });
+        // Configure the lighting devices by creating them in the system
+        for (let i = 0; i < lightingDevices.length; i++) {
+            const device = new lightingDevice_1.LightingDevice(this, i.toString(), lightingDevices[i]);
+            await device.InitializeIoBrokerObjects();
+        }
+        // Debug: original test variable
         await this.setObjectNotExistsAsync("testVariable", {
             type: "state",
             common: {
@@ -133,6 +150,7 @@ class Megabas extends utils.Adapter {
         }
     }
 }
+exports.Megabas = Megabas;
 if (module.parent) {
     // Export the constructor in compact mode
     module.exports = (options) => new Megabas(options);

@@ -64,8 +64,8 @@
 		]
 	},
 	"native": {
-		"option1": true,
-		"option2": "42"
+		"MaxStackLevel": 1,
+		"LightingDevices": "Light corridor; Light living room"
 	},
 	"objects": [],
 	"instanceObjects": [

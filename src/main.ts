@@ -5,6 +5,7 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
+import { LightingDevice } from "./lightingDevice";
 
 // Load your modules here, e.g.:
 // import * as fs from "fs";
@@ -34,13 +35,31 @@ class Megabas extends utils.Adapter {
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
 		this.log.info("config MaxStackLevel: " + this.config.MaxStackLevel);
-		this.log.info("config LightingDevices: " + this.config.LigthingDevices);
+		this.log.info("config LightingDevices: " + this.config.LightingDevices);
 
-		/*
-		For every state in the system there has to be also an object of type state
-		Here a simple template for a boolean variable named "testVariable"
-		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-		*/
+		// validate the maxStackLevel and set to valid values instead
+		let maxStackLevel = this.config.MaxStackLevel;
+		if (!maxStackLevel || maxStackLevel <= 0) {
+			maxStackLevel = 1;
+		}
+		if (maxStackLevel > 4) {
+			maxStackLevel = 4;
+		}
+
+		// Define the lighting devices to display in the channel list
+		const lightingDevices = new Array<string>(0);
+		const splitDevices = this.config.LightingDevices.split(";");
+		splitDevices.forEach((dev) => {
+			lightingDevices.push(dev.trim());
+		});
+
+		// Configure the lighting devices by creating them in the system
+		for (let i = 0; i < lightingDevices.length; i++) {
+			const device = new LightingDevice(this, i.toString(), lightingDevices[i]);
+			await device.InitializeIoBrokerObjects();
+		}
+
+		// Debug: original test variable
 		await this.setObjectNotExistsAsync("testVariable", {
 			type: "state",
 			common: {
@@ -152,3 +171,5 @@ if (module.parent) {
 	// otherwise start the instance directly
 	(() => new Megabas())();
 }
+
+export { Megabas };

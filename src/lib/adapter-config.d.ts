@@ -5,7 +5,7 @@ declare global {
 	namespace ioBroker {
 		interface AdapterConfig {
 			MaxStackLevel: number;
-			LigthingDevices: string;
+			LightingDevices: string;
 		}
 	}
 }
