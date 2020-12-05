@@ -6,16 +6,21 @@
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
 import { LightingDevice } from "./lightingDevice";
-
-// Load your modules here, e.g.:
-// import * as fs from "fs";
+import { StackableCard } from "./stackableCard";
 
 class Megabas extends utils.Adapter {
+	private lightingDevices: Array<LightingDevice>;
+	private stackableCards: Array<StackableCard>;
+
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
 			...options,
 			name: "megabas",
 		});
+
+		this.lightingDevices = new Array<LightingDevice>(0);
+		this.stackableCards = new Array<StackableCard>(0);
+
 		this.on("ready", this.onReady.bind(this));
 		this.on("stateChange", this.onStateChange.bind(this));
 		// this.on("objectChange", this.onObjectChange.bind(this));
@@ -46,6 +51,11 @@ class Megabas extends utils.Adapter {
 			maxStackLevel = 4;
 		}
 
+		for (let i = 0; i < maxStackLevel; i++) {
+			const card = new StackableCard(this, i);
+			card.InitializeIoBrokerObjects();
+		}
+
 		// Define the lighting devices to display in the channel list
 		const lightingDevices = new Array<string>(0);
 		const splitDevices = this.config.LightingDevices.split(";");
@@ -53,10 +63,12 @@ class Megabas extends utils.Adapter {
 			lightingDevices.push(dev.trim());
 		});
 
+		this.lightingDevices = new Array<LightingDevice>(lightingDevices.length);
 		// Configure the lighting devices by creating them in the system
 		for (let i = 0; i < lightingDevices.length; i++) {
 			const device = new LightingDevice(this, i.toString(), lightingDevices[i]);
 			await device.InitializeIoBrokerObjects();
+			this.lightingDevices[i] = device;
 		}
 
 		// Debug: original test variable
