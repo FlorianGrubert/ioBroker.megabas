@@ -123,35 +123,35 @@ class InputPort {
 		fullId: string,
 		state: string,
 		val: string | number | boolean | any[] | Record<string, any> | null,
-	): boolean {
+	): void {
 		if (state === "type") {
 			if (val) {
-				if (val === InputPortTypes.Counter) {
+				if (val == "Counter") {
 					this.portType = InputPortTypes.Counter;
 					this._megabas.log.info(`${fullId}: Setting ${state} to Counter`);
-				} else if (val === InputPortTypes.DryContact) {
+				} else if (val == "DryContact") {
 					this.portType = InputPortTypes.DryContact;
 					this._megabas.log.info(`${fullId}: Setting ${state} to DryContact`);
-				} else if (val === InputPortTypes.NotSet) {
+				} else if (val == "NotSet") {
 					this.portType = InputPortTypes.NotSet;
 					this._megabas.log.info(`${fullId}: Setting ${state} to NotSet`);
-				} else if (val === InputPortTypes.Resistor1k) {
+				} else if (val == "Resistor1k") {
 					this.portType = InputPortTypes.Resistor1k;
 					this._megabas.log.info(`${fullId}: Setting ${state} to Resistor1k`);
-				} else if (val === InputPortTypes.Resistor10k) {
+				} else if (val == "Resistor10k") {
 					this.portType = InputPortTypes.Resistor10k;
 					this._megabas.log.info(`${fullId}: Setting ${state} to Resistor10k`);
-				} else if (val === InputPortTypes.Voltage) {
+				} else if (val == "Voltage") {
 					this.portType = InputPortTypes.Voltage;
 					this._megabas.log.info(`${fullId}: Setting ${state} to Voltage`);
+				} else {
+					this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) in setting ${state} not found`);
 				}
 			} else {
 				this.portType = InputPortTypes.NotSet;
 			}
-			return true;
 		} else {
 			this._megabas.log.error(`${fullId}: Property ${state} was not found to set value ${val}`);
-			return false;
 		}
 	}
 }

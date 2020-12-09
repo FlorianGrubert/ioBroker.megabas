@@ -12,6 +12,10 @@ class StackableCard {
     get inputPorts() {
         return this._inputPorts;
     }
+    // Returns the name of the device object in ioBroker
+    get objectName() {
+        return this._baseObjName;
+    }
     async InitializeIoBrokerObjects() {
         await this._megabas.setObjectNotExistsAsync(this._baseObjName, {
             type: "device",
@@ -28,10 +32,6 @@ class StackableCard {
         for (let i = 0; i < 4; i++) {
             this.InitializeDacOutputPort(i);
         }
-    }
-    // Returns the name of the device object in ioBroker
-    get objectName() {
-        return this._baseObjName;
     }
     // Subscribes the necessary properties for updates from ioBroker
     SubscribeStates() {

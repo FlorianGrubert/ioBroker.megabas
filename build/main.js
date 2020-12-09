@@ -177,7 +177,7 @@ class Megabas extends utils.Adapter {
                 const portIndex = Number(portSplit[1]);
                 const selectedPort = selectedCard.inputPorts[portIndex];
                 if (state) {
-                    state.ack = selectedPort.SetState(id, splitId[4], state === null || state === void 0 ? void 0 : state.val);
+                    selectedPort.SetState(id, splitId[4], state === null || state === void 0 ? void 0 : state.val);
                 }
                 else {
                     selectedPort.SetState(id, splitId[4], null);
