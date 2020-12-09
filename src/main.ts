@@ -9,8 +9,8 @@ import { LightingDevice } from "./lightingDevice";
 import { StackableCard } from "./stackableCard";
 
 class Megabas extends utils.Adapter {
-	private lightingDevices: Array<LightingDevice>;
-	private stackableCards: Array<StackableCard>;
+	private _lightingDevices: Array<LightingDevice>;
+	private _stackableCards: Array<StackableCard>;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -18,8 +18,8 @@ class Megabas extends utils.Adapter {
 			name: "megabas",
 		});
 
-		this.lightingDevices = new Array<LightingDevice>(0);
-		this.stackableCards = new Array<StackableCard>(0);
+		this._lightingDevices = new Array<LightingDevice>(0);
+		this._stackableCards = new Array<StackableCard>(0);
 
 		this.on("ready", this.onReady.bind(this));
 		this.on("stateChange", this.onStateChange.bind(this));
@@ -51,11 +51,11 @@ class Megabas extends utils.Adapter {
 			maxStackLevel = 4;
 		}
 
-		this.stackableCards = new Array<StackableCard>(maxStackLevel);
+		this._stackableCards = new Array<StackableCard>(maxStackLevel);
 		for (let i = 0; i < maxStackLevel; i++) {
 			const card = new StackableCard(this, i);
 			card.InitializeIoBrokerObjects();
-			this.stackableCards[i] = card;
+			this._stackableCards[i] = card;
 		}
 
 		// Define the lighting devices to display in the channel list
@@ -65,12 +65,12 @@ class Megabas extends utils.Adapter {
 			lightingDevices.push(dev.trim());
 		});
 
-		this.lightingDevices = new Array<LightingDevice>(lightingDevices.length);
+		this._lightingDevices = new Array<LightingDevice>(lightingDevices.length);
 		// Configure the lighting devices by creating them in the system
 		for (let i = 0; i < lightingDevices.length; i++) {
 			const device = new LightingDevice(this, i.toString(), lightingDevices[i]);
 			await device.InitializeIoBrokerObjects();
-			this.lightingDevices[i] = device;
+			this._lightingDevices[i] = device;
 		}
 
 		// Debug: original test variable
@@ -87,7 +87,7 @@ class Megabas extends utils.Adapter {
 		});
 
 		// Subscribe to object updates for the stackable cards
-		this.stackableCards.forEach((card) => {
+		this._stackableCards.forEach((card) => {
 			card.SubscribeStates();
 		});
 
@@ -156,6 +156,45 @@ class Megabas extends utils.Adapter {
 	 * Is called if a subscribed state changes
 	 */
 	private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
+		// common name format: megabas.0.stackableCard:0.inputPort:0.type
+		// splitId[0] = megabas
+		// splitId[1] = 0 -> Instance ID
+		// splitId[2] = stackableCard:0
+		// splitId[3] = inputPort:0
+		// splitId[4] = type
+		const splitId = id.split(".");
+		if (splitId.length <= 3) {
+			this.log.error(`${id}: Invalid state changed received`);
+			return;
+		}
+		if (splitId[2].startsWith("stackableCard")) {
+			const cardSplit = splitId[2].split(":", 2);
+			const cardIndex = Number(cardSplit[1]);
+			const selectedCard = this._stackableCards[cardIndex];
+			if (splitId.length <= 4) {
+				this.log.error(`${id}: Invalid state changed for stackable card ${selectedCard.objectName}`);
+				return;
+			}
+
+			if (splitId[3].startsWith("inputPort")) {
+				const portSplit = splitId[3].split(":", 2);
+				const portIndex = Number(portSplit[1]);
+				const selectedPort = selectedCard.inputPorts[portIndex];
+				if (state) {
+					state.ack = selectedPort.SetState(id, splitId[4], state?.val);
+				} else {
+					selectedPort.SetState(id, splitId[4], null);
+				}
+			} else {
+				this.log.error(
+					`${id}: Unknown property in state changed for stackable card ${selectedCard.objectName}`,
+				);
+			}
+		} else {
+			this.log.error(`${id}: Unknown property state changed`);
+			return;
+		}
+
 		if (state) {
 			// The state was changed
 			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);

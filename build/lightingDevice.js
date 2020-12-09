@@ -3,20 +3,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LightingDevice = void 0;
 class LightingDevice {
     constructor(megabas, id, name) {
-        this.megabas = megabas;
-        this.id = id;
-        this.name = name;
-        this.baseObjName = "lightingDevice:" + id;
+        this._megabas = megabas;
+        this._id = id;
+        this._name = name;
+        this._baseObjName = "lightingDevice:" + id;
+    }
+    // Returns the name of the device object in ioBroker
+    get objectName() {
+        return this._baseObjName;
     }
     async InitializeIoBrokerObjects() {
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName, {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName, {
             type: "device",
             common: {
-                name: this.name,
+                name: this._name,
             },
             native: {},
         });
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName + ".presence_voltage", {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presence_voltage", {
             type: "state",
             common: {
                 name: "Voltage to set when presence was detected in Millivolt",
@@ -30,7 +34,7 @@ class LightingDevice {
             },
             native: {},
         });
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName + ".switch_voltage", {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".switch_voltage", {
             type: "state",
             common: {
                 name: "Voltage to set when the switch is set to ON in Millivolt",
@@ -44,7 +48,21 @@ class LightingDevice {
             },
             native: {},
         });
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName + ".presence_lastSeen", {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".off_voltage", {
+            type: "state",
+            common: {
+                name: "Voltage to set when switch and presence are OFF",
+                type: "number",
+                role: "level",
+                min: 0,
+                max: 10000,
+                def: 0,
+                read: true,
+                write: true,
+            },
+            native: {},
+        });
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presence_lastSeen", {
             type: "state",
             common: {
                 name: "Date and time presences was detected last",
@@ -55,7 +73,7 @@ class LightingDevice {
             },
             native: {},
         });
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName + ".presence_keepaliveSeconds", {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presence_keepaliveSeconds", {
             type: "state",
             common: {
                 name: "The number of seconds to keep the light switched on when presence was detected",
@@ -66,7 +84,7 @@ class LightingDevice {
             },
             native: {},
         });
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName + ".presence_isDetected", {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presence_isDetected", {
             type: "state",
             common: {
                 name: "If presence was detected within the presence keepalive seconds time ",
@@ -77,7 +95,7 @@ class LightingDevice {
             },
             native: {},
         });
-        await this.megabas.setObjectNotExistsAsync(this.baseObjName + ".switch_isOn", {
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".switch_isOn", {
             type: "state",
             common: {
                 name: "If the switch is switched on",
