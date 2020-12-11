@@ -26,6 +26,7 @@ exports.Megabas = void 0;
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = __importStar(require("@iobroker/adapter-core"));
+const I2C = __importStar(require("i2c-bus"));
 const lightingDevice_1 = require("./lightingDevice");
 const stackableCard_1 = require("./stackableCard");
 class Megabas extends utils.Adapter {
@@ -34,6 +35,8 @@ class Megabas extends utils.Adapter {
             ...options,
             name: "megabas",
         });
+        this._isRunning = false;
+        this._intervalI2cbus = null;
         this._lightingDevices = new Array(0);
         this._stackableCards = new Array(0);
         this.on("ready", this.onReady.bind(this));
@@ -80,55 +83,40 @@ class Megabas extends utils.Adapter {
             await device.InitializeIoBrokerObjects();
             this._lightingDevices[i] = device;
         }
-        // Debug: original test variable
-        await this.setObjectNotExistsAsync("testVariable", {
-            type: "state",
-            common: {
-                name: "testVariable",
-                type: "boolean",
-                role: "indicator",
-                read: true,
-                write: true,
-            },
-            native: {},
-        });
         // Subscribe to object updates for the stackable cards
         this._stackableCards.forEach((card) => {
             card.SubscribeStates();
         });
-        // In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-        this.subscribeStates("testVariable");
-        // You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-        // this.subscribeStates("lights.*");
-        // Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-        // this.subscribeStates("*");
-        /*
-            setState examples
-            you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-        */
-        // the variable testVariable is set to true as command (ack=false)
-        await this.setStateAsync("testVariable", true);
-        // same thing, but the value is flagged "ack"
-        // ack should be always set to true if the value is received from or acknowledged from the target system
-        await this.setStateAsync("testVariable", { val: true, ack: true });
-        // same thing, but the state is deleted after 30s (getState will return null afterwards)
-        await this.setStateAsync("testVariable", { val: true, ack: true, expire: 30 });
         // examples for the checkPassword/checkGroup functions
         let result = await this.checkPasswordAsync("admin", "iobroker");
         this.log.info("check user admin pw iobroker: " + result);
         result = await this.checkGroupAsync("admin", "admin");
         this.log.info("check group user admin group admin: " + result);
+        // start the actual adapter
+        this._isRunning = true;
+        this.setState("info.connection", true, true);
+        const that = this;
+        this._intervalI2cbus = setInterval(() => {
+            this.UpdateI2c(that);
+        }, 2000);
     }
     /**
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      */
     onUnload(callback) {
         try {
+            this.setState("info.connection", false, true);
+            this._isRunning = false;
             // Here you must clear all timeouts or intervals that may still be active
             // clearTimeout(timeout1);
             // clearTimeout(timeout2);
             // ...
-            // clearInterval(interval1);
+            if (this.log) {
+                this.log.debug(`Unloading intervalI2cbus: ${this._intervalI2cbus}`);
+            }
+            if (this._intervalI2cbus) {
+                clearInterval(this._intervalI2cbus);
+            }
             callback();
         }
         catch (e) {
@@ -193,11 +181,39 @@ class Megabas extends utils.Adapter {
         }
         if (state) {
             // The state was changed
-            this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+            this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
         }
         else {
             // The state was deleted
-            this.log.info(`state ${id} deleted`);
+            this.log.debug(`state ${id} deleted`);
+        }
+    }
+    UpdateI2c(megabas) {
+        if (!megabas._isRunning) {
+            if (megabas.log) {
+                megabas.log.silly("Adapter is not running");
+            }
+            return;
+        }
+        megabas.log.silly("Connection to i2c bus");
+        try {
+            const i2cBus = I2C.open(1, (err) => {
+                if (err) {
+                    megabas.log.error(`${megabas.name}: error connecting to i2c-bus: ${err}`);
+                    return;
+                }
+                megabas._stackableCards.forEach((card) => {
+                    card.UpdateI2c(i2cBus);
+                });
+                i2cBus.close((err) => {
+                    if (err) {
+                        megabas.log.error(`${megabas.name}: error closing i2c-bus: ${err}`);
+                    }
+                });
+            });
+        }
+        catch (error) {
+            megabas.log.error(`${megabas.name}: Error updating I2C status: ${error}`);
         }
     }
 }

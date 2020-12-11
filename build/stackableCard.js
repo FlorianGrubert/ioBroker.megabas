@@ -2,15 +2,20 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StackableCard = void 0;
 const inputPort_1 = require("./inputPort");
+const megabasConstants_1 = require("./megabasConstants");
 class StackableCard {
     constructor(megabas, id) {
         this._megabas = megabas;
         this._id = id.toString();
+        this._stackLevel = id;
         this._baseObjName = "stackableCard:" + id;
         this._inputPorts = new Array(8);
     }
     get inputPorts() {
         return this._inputPorts;
+    }
+    get hwBaseAddress() {
+        return megabasConstants_1.MegabasConstants.HW_ADD + this._stackLevel;
     }
     // Returns the name of the device object in ioBroker
     get objectName() {
@@ -37,6 +42,18 @@ class StackableCard {
     SubscribeStates() {
         for (let i = 0; i < 8; i++) {
             this._inputPorts[i].SubscribeStates();
+        }
+    }
+    UpdateI2c(i2cBus) {
+        this._megabas.log.silly("Reading i2c status");
+        const dryContactStatus = i2cBus.readByteSync(this.hwBaseAddress, megabasConstants_1.MegabasConstants.DRY_CONTACT_VAL_ADD);
+        let mask = 1;
+        let contactClosed = false;
+        for (let i = 0; i < 8; i++) {
+            mask = 1 << i;
+            contactClosed = (dryContactStatus & mask) > 0;
+            this._megabas.log.silly(`${this._baseObjName} contact ${i}: ${contactClosed}`);
+            this._inputPorts[i].UpdateValue(contactClosed, i2cBus);
         }
     }
     // Initializes the DAC output ports in the object model from ioBroker

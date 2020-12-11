@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InputPort = void 0;
+const megabasConstants_1 = require("./megabasConstants");
 var InputPortTypes;
 (function (InputPortTypes) {
     InputPortTypes["NotSet"] = "Not set";
@@ -16,11 +17,17 @@ class InputPort {
         this._card = card;
         this._portNumber = portNumber;
         this._baseObjName = this._card.objectName + ".inputPort:" + portNumber.toString();
-        this.portType = InputPortTypes.NotSet;
+        this._portType = InputPortTypes.NotSet;
+        this._valueDryContactClosed = false;
+        this._valueVoltage = 0;
     }
     // Returns the name of the device object in ioBroker
     get objectName() {
         return this._baseObjName;
+    }
+    // Returns the type of the port
+    get portType() {
+        return this._portType;
     }
     // Initializes the input ports and creates it in the iobroker object model
     async InitializeInputPort() {
@@ -74,6 +81,18 @@ class InputPort {
             },
             native: {},
         });
+        // Synchronize the state now
+        this._megabas.getState(channelBaseName + ".voltage", (err, state) => {
+            if (err) {
+                this._megabas.log.error(`${channelBaseName}: State "voltage" not found: ${err}`);
+            }
+            if (state) {
+                this.SetState(channelBaseName + ".voltage", "voltage", state.val);
+            }
+            else {
+                this.SetState(channelBaseName + ".voltage", "voltage", 0);
+            }
+        });
         await this._megabas.setObjectNotExistsAsync(channelBaseName + ".dryContactClosed", {
             type: "state",
             common: {
@@ -84,6 +103,18 @@ class InputPort {
                 write: false,
             },
             native: {},
+        });
+        // Synchronize the state now
+        this._megabas.getState(channelBaseName + ".dryContactClosed", (err, state) => {
+            if (err) {
+                this._megabas.log.error(`${channelBaseName}: State "dryContactClosed" not found: ${err}`);
+            }
+            if (state) {
+                this.SetState(channelBaseName + ".dryContactClosed", "dryContactClosed", state.val);
+            }
+            else if (err) {
+                this.SetState(channelBaseName + ".dryContactClosed", "dryContactClosed", false);
+            }
         });
         await this._megabas.setObjectNotExistsAsync(channelBaseName + ".resistorValue", {
             type: "state",
@@ -104,39 +135,82 @@ class InputPort {
         if (state === "type") {
             if (val) {
                 if (val == "Counter") {
-                    this.portType = InputPortTypes.Counter;
-                    this._megabas.log.info(`${fullId}: Setting ${state} to Counter`);
+                    this._portType = InputPortTypes.Counter;
+                    this._megabas.log.debug(`${fullId}: Setting ${state} to Counter`);
                 }
                 else if (val == "DryContact") {
-                    this.portType = InputPortTypes.DryContact;
-                    this._megabas.log.info(`${fullId}: Setting ${state} to DryContact`);
+                    this._portType = InputPortTypes.DryContact;
+                    this._megabas.log.debug(`${fullId}: Setting ${state} to DryContact`);
                 }
                 else if (val == "NotSet") {
-                    this.portType = InputPortTypes.NotSet;
-                    this._megabas.log.info(`${fullId}: Setting ${state} to NotSet`);
+                    this._portType = InputPortTypes.NotSet;
+                    this._megabas.log.debug(`${fullId}: Setting ${state} to NotSet`);
                 }
                 else if (val == "Resistor1k") {
-                    this.portType = InputPortTypes.Resistor1k;
-                    this._megabas.log.info(`${fullId}: Setting ${state} to Resistor1k`);
+                    this._portType = InputPortTypes.Resistor1k;
+                    this._megabas.log.debug(`${fullId}: Setting ${state} to Resistor1k`);
                 }
                 else if (val == "Resistor10k") {
-                    this.portType = InputPortTypes.Resistor10k;
-                    this._megabas.log.info(`${fullId}: Setting ${state} to Resistor10k`);
+                    this._portType = InputPortTypes.Resistor10k;
+                    this._megabas.log.debug(`${fullId}: Setting ${state} to Resistor10k`);
                 }
                 else if (val == "Voltage") {
-                    this.portType = InputPortTypes.Voltage;
-                    this._megabas.log.info(`${fullId}: Setting ${state} to Voltage`);
+                    this._portType = InputPortTypes.Voltage;
+                    this._megabas.log.debug(`${fullId}: Setting ${state} to Voltage`);
                 }
                 else {
                     this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) in setting ${state} not found`);
                 }
             }
             else {
-                this.portType = InputPortTypes.NotSet;
+                this._portType = InputPortTypes.NotSet;
+            }
+        }
+        else if (state === "dryContactClosed") {
+            if (val) {
+                if (typeof val === "boolean") {
+                    this._valueDryContactClosed = val;
+                }
+                else {
+                    this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
+                }
+            }
+            else {
+                this._valueDryContactClosed = false;
+            }
+        }
+        else if (state === "voltage") {
+            if (val) {
+                if (typeof val === "number") {
+                    this._valueVoltage = val;
+                }
+                else {
+                    this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
+                }
+            }
+            else {
+                this._valueVoltage = 0;
             }
         }
         else {
             this._megabas.log.error(`${fullId}: Property ${state} was not found to set value ${val}`);
+        }
+    }
+    UpdateValue(dryContactStatus, i2cBus) {
+        if (this._portType === InputPortTypes.DryContact) {
+            if (this._valueDryContactClosed != dryContactStatus) {
+                this._valueDryContactClosed = dryContactStatus;
+                this._megabas.setStateAsync(this._baseObjName + ".dryContactClosed", this._valueDryContactClosed);
+            }
+        }
+        else {
+            if (this._portType === InputPortTypes.Voltage) {
+                const voltage = i2cBus.readWordSync(this._card.hwBaseAddress, megabasConstants_1.MegabasConstants.U0_10_IN_VAL1_ADD);
+                if (this._valueVoltage != voltage) {
+                    this._valueVoltage = voltage;
+                    this._megabas.setStateAsync(this._baseObjName + ".voltage", this._valueVoltage);
+                }
+            }
         }
     }
 }

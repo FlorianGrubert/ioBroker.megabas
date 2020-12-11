@@ -20,7 +20,8 @@
     "url": "https://github.com/FlorianGrubert/ioBroker.megabas"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^2.4.0"
+    "@iobroker/adapter-core": "^2.4.0",
+    "@types/i2c-bus": "^5.1.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.1",

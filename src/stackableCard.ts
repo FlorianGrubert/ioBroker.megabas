@@ -1,11 +1,15 @@
+import * as I2C from "i2c-bus";
 import { InputPort } from "./inputPort";
 import { Megabas } from "./main";
+import { MegabasConstants } from "./megabasConstants";
 
 class StackableCard {
 	// Megabas controller to use
 	private _megabas: Megabas;
 	// Unique id of the card
 	private _id: string;
+	// defines the stack level
+	private _stackLevel: number;
 	// The base name of the object in ioBroker
 	private _baseObjName: string;
 	// The input ports in this card
@@ -13,6 +17,10 @@ class StackableCard {
 
 	public get inputPorts(): Array<InputPort> {
 		return this._inputPorts;
+	}
+
+	public get hwBaseAddress(): number {
+		return MegabasConstants.HW_ADD + this._stackLevel;
 	}
 
 	// Returns the name of the device object in ioBroker
@@ -23,6 +31,7 @@ class StackableCard {
 	public constructor(megabas: Megabas, id: number) {
 		this._megabas = megabas;
 		this._id = id.toString();
+		this._stackLevel = id;
 		this._baseObjName = "stackableCard:" + id;
 		this._inputPorts = new Array<InputPort>(8);
 	}
@@ -51,6 +60,20 @@ class StackableCard {
 	public SubscribeStates(): void {
 		for (let i = 0; i < 8; i++) {
 			this._inputPorts[i].SubscribeStates();
+		}
+	}
+
+	public UpdateI2c(i2cBus: I2C.I2CBus): void {
+		this._megabas.log.silly("Reading i2c status");
+
+		const dryContactStatus = i2cBus.readByteSync(this.hwBaseAddress, MegabasConstants.DRY_CONTACT_VAL_ADD);
+		let mask = 1;
+		let contactClosed = false;
+		for (let i = 0; i < 8; i++) {
+			mask = 1 << i;
+			contactClosed = (dryContactStatus & mask) > 0;
+			this._megabas.log.silly(`${this._baseObjName} contact ${i}: ${contactClosed}`);
+			this._inputPorts[i].UpdateValue(contactClosed, i2cBus);
 		}
 	}
 
