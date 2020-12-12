@@ -12,6 +12,9 @@ class LightingDevice {
     get objectName() {
         return this._baseObjName;
     }
+    /**
+     * Initializes the states in the ioBroker object model
+     */
     async InitializeIoBrokerObjects() {
         await this._megabas.setObjectNotExistsAsync(this._baseObjName, {
             type: "device",
@@ -103,6 +106,17 @@ class LightingDevice {
                 role: "switch.light",
                 read: true,
                 write: false,
+            },
+            native: {},
+        });
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".outputPorts", {
+            type: "state",
+            common: {
+                name: "The output ports to set the mentioned voltages on",
+                type: "array",
+                role: "state",
+                read: true,
+                write: true,
             },
             native: {},
         });

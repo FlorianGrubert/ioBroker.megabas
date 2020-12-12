@@ -14,6 +14,7 @@ class LightingDevice {
 	public get objectName(): string {
 		return this._baseObjName;
 	}
+
 	public constructor(megabas: Megabas, id: string, name: string) {
 		this._megabas = megabas;
 		this._id = id;
@@ -21,6 +22,9 @@ class LightingDevice {
 		this._baseObjName = "lightingDevice:" + id;
 	}
 
+	/**
+	 * Initializes the states in the ioBroker object model
+	 */
 	public async InitializeIoBrokerObjects(): Promise<void> {
 		await this._megabas.setObjectNotExistsAsync(this._baseObjName, {
 			type: "device",
@@ -122,6 +126,20 @@ class LightingDevice {
 			},
 			native: {},
 		});
+
+		await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".outputPorts", {
+			type: "state",
+			common: {
+				name: "The output ports to set the mentioned voltages on",
+				type: "array",
+				role: "state",
+				read: true,
+				write: true,
+			},
+			native: {},
+		});
+
+		// Todo: Go on here: assign an array value to see what it looks like in ioBroker
 	}
 }
 

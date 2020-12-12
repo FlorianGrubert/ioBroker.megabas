@@ -1,7 +1,4 @@
 "use strict";
-/*
- * Created with @iobroker/create-adapter v1.30.1
- */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -23,12 +20,16 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Megabas = void 0;
-// The adapter-core module gives you access to the core ioBroker functions
-// you need to create an adapter
+/*
+ * Created with @iobroker/create-adapter v1.30.1
+ */
 const utils = __importStar(require("@iobroker/adapter-core"));
 const I2C = __importStar(require("i2c-bus"));
 const lightingDevice_1 = require("./lightingDevice");
 const stackableCard_1 = require("./stackableCard");
+/**
+ * Megabas base controller
+ */
 class Megabas extends utils.Adapter {
     constructor(options = {}) {
         super({
@@ -95,6 +96,7 @@ class Megabas extends utils.Adapter {
         // start the actual adapter
         this._isRunning = true;
         this.setState("info.connection", true, true);
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const that = this;
         this._intervalI2cbus = setInterval(() => {
             this.UpdateI2c(that);
@@ -171,6 +173,17 @@ class Megabas extends utils.Adapter {
                     selectedPort.SetState(id, splitId[4], null);
                 }
             }
+            else if (splitId[3].startsWith("dacOutputPort")) {
+                const portSplit = splitId[3].split(":", 2);
+                const portIndex = Number(portSplit[1]);
+                const selectedPort = selectedCard.dacOutputPorts[portIndex];
+                if (state) {
+                    selectedPort.SetState(id, splitId[4], state === null || state === void 0 ? void 0 : state.val);
+                }
+                else {
+                    selectedPort.SetState(id, splitId[4], null);
+                }
+            }
             else {
                 this.log.error(`${id}: Unknown property in state changed for stackable card ${selectedCard.objectName}`);
             }
@@ -188,6 +201,10 @@ class Megabas extends utils.Adapter {
             this.log.debug(`state ${id} deleted`);
         }
     }
+    /**
+     * Reads the status of all components from the I2C bus
+     * @param megabas The megabas controller to use
+     */
     UpdateI2c(megabas) {
         if (!megabas._isRunning) {
             if (megabas.log) {

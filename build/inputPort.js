@@ -11,6 +11,9 @@ var InputPortTypes;
     InputPortTypes["DryContact"] = "Dry contact (open or closed)";
     InputPortTypes["Counter"] = "Counter based contact";
 })(InputPortTypes || (InputPortTypes = {}));
+/**
+ * Defines an input port on a stackable card
+ */
 class InputPort {
     constructor(megabas, card, portNumber) {
         this._megabas = megabas;
@@ -25,11 +28,15 @@ class InputPort {
     get objectName() {
         return this._baseObjName;
     }
-    // Returns the type of the port
+    /**
+     * Returns the type of the port
+     */
     get portType() {
         return this._portType;
     }
-    // Initializes the input ports and creates it in the iobroker object model
+    /**
+     * Initializes the states in the ioBroker object model
+     */
     async InitializeInputPort() {
         const channelBaseName = this._baseObjName;
         await this._megabas.setObjectNotExistsAsync(channelBaseName, {
@@ -128,9 +135,18 @@ class InputPort {
             native: {},
         });
     }
+    /**
+     * Subscribes the relevant properties to changes from ioBroker
+     */
     SubscribeStates() {
         this._megabas.subscribeStates(this._baseObjName + ".type");
     }
+    /**
+     * State update from ioBroker received: Process it and update the internal variables
+     * @param fullId The full name of the state to update including path
+     * @param state The name of the state to update
+     * @param val The value to set
+     */
     SetState(fullId, state, val) {
         if (state === "type") {
             if (val) {
@@ -196,6 +212,11 @@ class InputPort {
             this._megabas.log.error(`${fullId}: Property ${state} was not found to set value ${val}`);
         }
     }
+    /**
+     * Updates the values of this input port from the I2C bus
+     * @param dryContactStatus The status of the port if it is a dry contact
+     * @param i2cBus The I2C bus used to read status values from
+     */
     UpdateValue(dryContactStatus, i2cBus) {
         if (this._portType === InputPortTypes.DryContact) {
             if (this._valueDryContactClosed != dryContactStatus) {
@@ -205,7 +226,8 @@ class InputPort {
         }
         else {
             if (this._portType === InputPortTypes.Voltage) {
-                const voltage = i2cBus.readWordSync(this._card.hwBaseAddress, megabasConstants_1.MegabasConstants.U0_10_IN_VAL1_ADD);
+                const hwAddress = megabasConstants_1.MegabasConstants.U0_10_IN_VAL1_ADD + 2 * this._portNumber;
+                const voltage = i2cBus.readWordSync(this._card.hwBaseAddress, hwAddress);
                 if (this._valueVoltage != voltage) {
                     this._valueVoltage = voltage;
                     this._megabas.setStateAsync(this._baseObjName + ".voltage", this._valueVoltage);

@@ -1,14 +1,14 @@
 /*
  * Created with @iobroker/create-adapter v1.30.1
  */
-
-// The adapter-core module gives you access to the core ioBroker functions
-// you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
 import * as I2C from "i2c-bus";
 import { LightingDevice } from "./lightingDevice";
 import { StackableCard } from "./stackableCard";
 
+/**
+ * Megabas base controller
+ */
 class Megabas extends utils.Adapter {
 	private _lightingDevices: Array<LightingDevice>;
 	private _stackableCards: Array<StackableCard>;
@@ -94,6 +94,7 @@ class Megabas extends utils.Adapter {
 		this._isRunning = true;
 		this.setState("info.connection", true, true);
 
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const that = this;
 		this._intervalI2cbus = setInterval(() => {
 			this.UpdateI2c(that);
@@ -174,6 +175,15 @@ class Megabas extends utils.Adapter {
 				} else {
 					selectedPort.SetState(id, splitId[4], null);
 				}
+			} else if (splitId[3].startsWith("dacOutputPort")) {
+				const portSplit = splitId[3].split(":", 2);
+				const portIndex = Number(portSplit[1]);
+				const selectedPort = selectedCard.dacOutputPorts[portIndex];
+				if (state) {
+					selectedPort.SetState(id, splitId[4], state?.val);
+				} else {
+					selectedPort.SetState(id, splitId[4], null);
+				}
 			} else {
 				this.log.error(
 					`${id}: Unknown property in state changed for stackable card ${selectedCard.objectName}`,
@@ -193,6 +203,10 @@ class Megabas extends utils.Adapter {
 		}
 	}
 
+	/**
+	 * Reads the status of all components from the I2C bus
+	 * @param megabas The megabas controller to use
+	 */
 	private UpdateI2c(megabas: Megabas): void {
 		if (!megabas._isRunning) {
 			if (megabas.log) {

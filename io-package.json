@@ -16,17 +16,17 @@
 				"zh-cn": "首次出版"
 			}
 		},
-		"title": "Building Automation Stackable Card (megabas-rpi)",
+		"title": "Building Automation Card (megabas-rpi)",
 		"titleLang": {
-			"en": "Building Automation Stackable Card (megabas-rpi)",
-			"de": "Stapelbare Karte für die Gebäudeautomation (Megabas-RPI)",
+			"en": "Building Automation Card (megabas-rpi)",
+			"de": "Karte für die Gebäudeautomation (Megabas-RPI)",
 			"ru": "Стекируемая карта автоматизации зданий (мегабас-rpi)",
 			"pt": "Placa empilhável de automação predial (megabas-rpi)",
 			"nl": "Stapelbare kaart voor gebouwautomatisering (megabas-rpi)",
 			"fr": "Carte empilable d'automatisation de bâtiment (megabas-rpi)",
 			"it": "Scheda impilabile per automazione degli edifici (megabas-rpi)",
 			"es": "Tarjeta apilable de automatización de edificios (megabas-rpi)",
-			"pl": "Karta Building Automation Stackable (megabas-rpi)",
+			"pl": "Karta Building Automation (megabas-rpi)",
 			"zh-cn": "楼宇自动化可堆叠卡（megabas-rpi）"
 		},
 		"desc": {
