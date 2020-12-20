@@ -206,6 +206,24 @@ class Megabas extends utils.Adapter {
 					`${id}: Unknown property in state changed for stackable card ${selectedCard.objectName}`,
 				);
 			}
+		} else if (splitId[2].startsWith("lightingDevice")) {
+			const deviceSplit = splitId[2].split(":", 2);
+			const deviceIndex = Number(deviceSplit[1]);
+			const lightingDevice = this._lightingDevices[deviceIndex];
+			if (splitId.length <= 4) {
+				this.log.error(`${id}: Invalid state changed for lightingDevice ${lightingDevice.objectName}`);
+				return;
+			}
+			let splitId4 = null;
+			if (splitId.length > 4) {
+				splitId4 = splitId[4];
+			}
+
+			if (state) {
+				lightingDevice.SetState(id, splitId[3], splitId4, state?.val);
+			} else {
+				lightingDevice.SetState(id, splitId[3], splitId4, null);
+			}
 		} else {
 			this.log.error(`${id}: Unknown property state changed`);
 			return;
