@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LightingDevice = void 0;
+const portLink_1 = require("./portLink");
 class LightingDevice {
     constructor(megabas, id, name) {
         this._megabas = megabas;
@@ -113,13 +114,29 @@ class LightingDevice {
             type: "state",
             common: {
                 name: "The output ports to set the mentioned voltages on",
-                type: "array",
+                type: "string",
                 role: "state",
                 read: true,
                 write: true,
             },
             native: {},
         });
+        // Todo: Go on here: assign an array value to see what it looks like in ioBroker
+        const links = new Array(2);
+        links[0] = new portLink_1.PortLink();
+        links[0].cardNumber = 1;
+        links[0].portNumber = 2;
+        links[0]._test = "test 1";
+        links[1] = new portLink_1.PortLink();
+        links[1].cardNumber = 1;
+        links[1].portNumber = 3;
+        links[0]._test = "test 2";
+        const str = JSON.stringify(links);
+        this._megabas.setStateAsync(this._baseObjName + ".outputPorts", str);
+        const test = JSON.parse(str);
+        this._megabas.log.debug("Port: " + test[0].portNumber);
+        this._megabas.log.debug("Test: " + test[0]._test);
+        this._megabas.log.debug("Test: " + test[1]._test);
     }
 }
 exports.LightingDevice = LightingDevice;

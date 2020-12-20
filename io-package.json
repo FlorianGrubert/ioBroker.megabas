@@ -65,7 +65,8 @@
 	},
 	"native": {
 		"MaxStackLevel": 1,
-		"LightingDevices": "Light corridor; Light living room"
+		"LightingDevices": "Light corridor; Light living room",
+		"PollingInterval": 2000
 	},
 	"objects": [],
 	"instanceObjects": [

@@ -14,6 +14,8 @@ class Megabas extends utils.Adapter {
 	private _stackableCards: Array<StackableCard>;
 	private _isRunning: boolean;
 	private _intervalI2cbus: NodeJS.Timeout | null;
+	private _timeoutWatchdog: NodeJS.Timeout | null;
+	private _lastI2cCheck: number;
 
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -23,6 +25,8 @@ class Megabas extends utils.Adapter {
 
 		this._isRunning = false;
 		this._intervalI2cbus = null;
+		this._timeoutWatchdog = null;
+		this._lastI2cCheck = Date.now();
 		this._lightingDevices = new Array<LightingDevice>(0);
 		this._stackableCards = new Array<StackableCard>(0);
 
@@ -52,8 +56,8 @@ class Megabas extends utils.Adapter {
 		if (!maxStackLevel || maxStackLevel <= 0) {
 			maxStackLevel = 1;
 		}
-		if (maxStackLevel > 4) {
-			maxStackLevel = 4;
+		if (maxStackLevel > 8) {
+			maxStackLevel = 8;
 		}
 
 		this._stackableCards = new Array<StackableCard>(maxStackLevel);
@@ -94,11 +98,17 @@ class Megabas extends utils.Adapter {
 		this._isRunning = true;
 		this.setState("info.connection", true, true);
 
+		this.log.info(`${this.name} Initializing polling with ${this.config.PollingInterval}ms`);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const that = this;
 		this._intervalI2cbus = setInterval(() => {
 			this.UpdateI2c(that);
-		}, 2000);
+		}, this.config.PollingInterval);
+
+		// Enable an independent watchdog
+		this._timeoutWatchdog = setTimeout(() => {
+			this.WatchDog(that);
+		}, this.config.PollingInterval * 5);
 	}
 
 	/**
@@ -119,6 +129,13 @@ class Megabas extends utils.Adapter {
 			}
 			if (this._intervalI2cbus) {
 				clearInterval(this._intervalI2cbus);
+			}
+
+			if (this.log) {
+				this.log.debug(`Unloading watchdog: ${this._timeoutWatchdog}`);
+			}
+			if (this._timeoutWatchdog) {
+				clearTimeout(this._timeoutWatchdog);
 			}
 
 			callback();
@@ -215,6 +232,7 @@ class Megabas extends utils.Adapter {
 			return;
 		}
 		megabas.log.silly("Connection to i2c bus");
+		this._lastI2cCheck = Date.now();
 
 		try {
 			const i2cBus = I2C.open(1, (err) => {
@@ -235,6 +253,32 @@ class Megabas extends utils.Adapter {
 		} catch (error) {
 			megabas.log.error(`${megabas.name}: Error updating I2C status: ${error}`);
 		}
+	}
+
+	/**
+	 * Checks wether the checks were performed as necessary and else restarts the i2c check interval
+	 * @param megabas The megabas instance to watch for
+	 */
+	private WatchDog(megabas: Megabas): void {
+		const timeInMSec = Date.now() - megabas._lastI2cCheck;
+
+		if (megabas._isRunning && timeInMSec > megabas.config.PollingInterval * 2) {
+			if (megabas.log) {
+				megabas.log.warn(
+					`${this.name} Watchdog-warning: Interval not checking since ${timeInMSec}ms. Reinitializing polling.`,
+				);
+			}
+			if (megabas._intervalI2cbus) {
+				clearInterval(megabas._intervalI2cbus);
+			}
+			megabas._intervalI2cbus = setInterval(() => {
+				megabas.UpdateI2c(megabas);
+			}, megabas.config.PollingInterval);
+		}
+
+		megabas._timeoutWatchdog = setTimeout(() => {
+			megabas.WatchDog(megabas);
+		}, megabas.config.PollingInterval * 5);
 	}
 
 	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.

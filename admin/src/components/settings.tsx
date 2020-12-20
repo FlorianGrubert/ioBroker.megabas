@@ -133,6 +133,8 @@ class Settings extends React.Component<SettingsProps, SettingsState> {
 				{this.renderInput("MaxStackLevel", "MaxStackLevel", "number")}
 				<br />
 				{this.renderInput("LightingDevices", "LightingDevices", "text")}
+				<br />
+				{this.renderInput("PollingInterval", "PollingInterval", "number")}
 			</form>
 		);
 	}

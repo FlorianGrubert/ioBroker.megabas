@@ -131,7 +131,7 @@ class LightingDevice {
 			type: "state",
 			common: {
 				name: "The output ports to set the mentioned voltages on",
-				type: "array",
+				type: "string",
 				role: "state",
 				read: true,
 				write: true,
@@ -139,7 +139,42 @@ class LightingDevice {
 			native: {},
 		});
 
-		// Todo: Go on here: assign an array value to see what it looks like in ioBroker
+		await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".switchPorts", {
+			type: "state",
+			common: {
+				name: "The input ports to read a switch status from",
+				type: "string",
+				role: "state",
+				read: true,
+				write: true,
+			},
+			native: {},
+		});
+
+		await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presencePorts", {
+			type: "state",
+			common: {
+				name: "The input ports to read the presence signal  from",
+				type: "string",
+				role: "state",
+				read: true,
+				write: true,
+			},
+			native: {},
+		});
+		// TODO: Überarbeiten! Die Ports as ordner ausprägen.
+		// Eine Eigenschaft mit Anzahl der zu überwachenden Ports
+		await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".precensePorts", {
+			type: "state",
+			common: {
+				name: "The input ports to read the presence signal  from",
+				type: "string",
+				role: "state",
+				read: true,
+				write: true,
+			},
+			native: {},
+		});
 	}
 }
 

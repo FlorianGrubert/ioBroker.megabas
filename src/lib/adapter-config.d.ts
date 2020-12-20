@@ -6,6 +6,7 @@ declare global {
 		interface AdapterConfig {
 			MaxStackLevel: number;
 			LightingDevices: string;
+			PollingInterval: number;
 		}
 	}
 }
