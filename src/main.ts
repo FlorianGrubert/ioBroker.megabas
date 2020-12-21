@@ -12,6 +12,12 @@ import { StackableCard } from "./stackableCard";
 class Megabas extends utils.Adapter {
 	private _lightingDevices: Array<LightingDevice>;
 	private _stackableCards: Array<StackableCard>;
+	/**
+	 * The available stackable cards
+	 */
+	public get stackableCards(): Array<StackableCard> {
+		return this._stackableCards;
+	}
 	private _isRunning: boolean;
 	private _intervalI2cbus: NodeJS.Timeout | null;
 	private _timeoutWatchdog: NodeJS.Timeout | null;
@@ -87,12 +93,10 @@ class Megabas extends utils.Adapter {
 			card.SubscribeStates();
 		});
 
-		// examples for the checkPassword/checkGroup functions
-		let result = await this.checkPasswordAsync("admin", "iobroker");
-		this.log.info("check user admin pw iobroker: " + result);
-
-		result = await this.checkGroupAsync("admin", "admin");
-		this.log.info("check group user admin group admin: " + result);
+		// Subscribe to object updates for the lighting devices
+		this._lightingDevices.forEach((device) => {
+			device.SubscribeStates();
+		});
 
 		// start the actual adapter
 		this._isRunning = true;
@@ -210,7 +214,7 @@ class Megabas extends utils.Adapter {
 			const deviceSplit = splitId[2].split(":", 2);
 			const deviceIndex = Number(deviceSplit[1]);
 			const lightingDevice = this._lightingDevices[deviceIndex];
-			if (splitId.length <= 4) {
+			if (splitId.length < 4) {
 				this.log.error(`${id}: Invalid state changed for lightingDevice ${lightingDevice.objectName}`);
 				return;
 			}
@@ -268,6 +272,9 @@ class Megabas extends utils.Adapter {
 					}
 				});
 			});
+
+			// Update the lighting devices
+			megabas._lightingDevices.forEach((device) => { device.UpdateDeviceStatus(); });
 		} catch (error) {
 			megabas.log.error(`${megabas.name}: Error updating I2C status: ${error}`);
 		}

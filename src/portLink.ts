@@ -1,11 +1,12 @@
+import { InputPortTypes } from "./inputPort";
 import { LightingDevice } from "./lightingDevice";
 import { Megabas } from "./main";
 
 enum LightingPortTypes {
-	"Output" = "Output Port",
-	"Presence" = "Input for presence signal",
-	"Switch" = "Input for a switch",
-	"Brightness" = "Input for a brightness signal",
+	"Output" = "output",
+	"Presence" = "presence",
+	"Switch" = "switch",
+	"Brightness" = "brightness",
 }
 
 /**
@@ -13,13 +14,39 @@ enum LightingPortTypes {
  */
 class PortLink {
 	/**
-	 * The number of the sackable card the port is attached to [1..8]
+	 * The number of the stackable card the port is attached to [1..8]
 	 */
 	private _cardNumber: number;
+	/**
+	 * The number of the stackable card the port is attached to [1..8]
+	 */
+	public get cardNumber(): number {
+		return this._cardNumber;
+	}
+	/**
+	 * The number of the stackable card the port is attached to [1..8]
+	 */
+	public set cardNumber(value: number) {
+		this._cardNumber = value;
+	}
+
 	/**
 	 * The number of the port on the card. [1..4] for output ports or [1..8] for input ports
 	 */
 	private _portNumber: number;
+	/**
+	 * The number of the port on the card. [1..4] for output ports or [1..8] for input ports
+	 */
+	public get portNumber(): number {
+		return this._portNumber;
+	}
+	/**
+	 * The number of the port on the card. [1..4] for output ports or [1..8] for input ports
+	 */
+	public set portNumber(value: number) {
+		this._portNumber = value;
+	}
+
 	/**
 	 * The lighting device this port is connected to
 	 */
@@ -97,7 +124,7 @@ class PortLink {
 				maxCount = 8;
 				break;
 		}
-		
+
 		await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".portNumber", {
 			type: "state",
 			common: {
@@ -112,6 +139,185 @@ class PortLink {
 			},
 			native: {},
 		});
+	}
+
+	/**
+	 * Deletes the objects from ioBroker
+	 */
+	public DeleteIoBrokerObjects(): void {
+		this._megabas.delObjectAsync(this._baseObjName + ".cardNumber");
+		this._megabas.delObjectAsync(this._baseObjName + ".portNumber");
+		this._megabas.delObjectAsync(this._baseObjName);
+	}
+
+	/**
+	 * Subscribes the relevant properties to changes from ioBroker
+	 */
+	public SubscribeStates(): void {
+		this._megabas.subscribeStates(this._baseObjName + ".cardNumber");
+		this._megabas.subscribeStates(this._baseObjName + ".portNumber");
+	}
+
+	/**
+	 * State update from ioBroker received: Process it and update the internal variables
+	 * @param fullId The full name of the state to update including path
+	 * @param state The name of the state to update
+	 * @param nextState If there was a next state property, it is specified here
+	 * @param val The value to set
+	 */
+	public SetState(
+		fullId: string,
+		state: string,
+		val: string | number | boolean | any[] | Record<string, any> | null,
+	): void {
+		if (state === "cardNumber") {
+			if (val) {
+				if (typeof val === "number") {
+					if (val < 0 || val > 8) {
+						this._megabas.log.error(`${fullId}: ${val} is an invalid index for a stackable card. Setting card number to 0`);
+						this._cardNumber = 0;
+						this._megabas.setStateAsync(this._baseObjName + ".cardNumber", 0);
+					} else {
+						this._cardNumber = val;
+					}
+				} else {
+					this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
+				}
+			} else {
+				this._cardNumber = 0;
+			}
+		} else if (state === "portNumber") {
+			if (val) {
+				if (typeof val === "number") {
+					let maxIdx = 8;
+					if (this._portType == LightingPortTypes.Output) {
+						maxIdx = 4;
+					}
+
+					if (val < 0 || val > maxIdx) {
+						this._megabas.log.error(`${fullId}: ${val} is an invalid index for ${this._portType}. Setting port number to 0`);
+						this._portNumber = 0;
+						this._megabas.setStateAsync(this._baseObjName + ".portNumber", 0);
+					} else {
+						this._portNumber = val;
+					}
+				} else {
+					this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
+				}
+			} else {
+				this._portNumber = 0;
+			}
+		} else {
+			this._megabas.log.error(`${fullId}: Property ${state} was not found to set value ${val}`);
+		}
+	}
+
+	/**
+	 * Checks if this port is configured correctly
+	 */
+	public IsValidPort(): boolean {
+		try {
+			if (this._cardNumber <= 0 || this._portNumber <= 0) {
+				return false;
+			}
+			if (this._megabas.stackableCards.length <= this._cardNumber - 1) {
+				this._megabas.log.warn(`${this._baseObjName}: card number ${this._cardNumber} is not connected`);
+				return false;
+			}
+			if (this._portType == LightingPortTypes.Output) {
+				// No more steps for output ports
+				return true;
+			}
+
+			// If other port type, check wether the port is configured correctly
+			const card = this._megabas.stackableCards[this._cardNumber - 1];
+			const port = card.inputPorts[this._portNumber - 1];
+			switch (this._portType) {
+				case LightingPortTypes.Brightness:
+					if (port.portType != InputPortTypes.Voltage) {
+						this._megabas.log.warn(`${this._baseObjName}: card ${this._cardNumber} input port ${this._portNumber} is not configured as "voltage" but should be`);
+						return false;
+					}
+					break;
+				default:
+					if (port.portType != InputPortTypes.DryContact) {
+						this._megabas.log.warn(`${this._baseObjName}: card ${this._cardNumber} input port ${this._portNumber} is not configured as "DryContact" but should be`);
+						return false;
+					}
+					break;
+			}
+
+			return true;
+		} catch (error) {
+			this._megabas.log.error(`${this._baseObjName}: ${error}`);
+			return false;
+		}
+	}
+
+	/**
+	 * Returns the value of a dry contact
+	 */
+	public GetDryContactClosed(): boolean {
+		if (this._cardNumber <= 0 || this._portNumber <= 0) {
+			return false;
+		}
+		if (this._megabas.stackableCards.length <= this._cardNumber - 1) {
+			this._megabas.log.error(`${this._baseObjName}: card number ${this._cardNumber} is not connected`);
+			return false;
+		}
+		if (this._portType == LightingPortTypes.Output) {
+			return false;
+		}
+
+		const card = this._megabas.stackableCards[this._cardNumber - 1];
+		const port = card.inputPorts[this._portNumber - 1];
+
+		return port.valueDryContactClosed;
+	}
+
+	/**
+	 * Returns the value of a voltage port
+	 */
+	public GetVoltageValue(): number {
+		if (this._cardNumber <= 0 || this._portNumber <= 0) {
+			return 0;
+		}
+		if (this._megabas.stackableCards.length <= this._cardNumber - 1) {
+			this._megabas.log.error(`${this._baseObjName}: card number ${this._cardNumber} is not connected`);
+			return 0;
+		}
+		if (this._portType == LightingPortTypes.Output) {
+			return 0;
+		}
+
+		const card = this._megabas.stackableCards[this._cardNumber - 1];
+		const port = card.inputPorts[this._portNumber - 1];
+
+		return port.valueVoltage;
+	}
+
+	/**
+	 * Sets the voltage at an output port
+	 */
+	public SetVoltageValue(voltage: number): void {
+		if (this._cardNumber <= 0 || this._portNumber <= 0) {
+			return;
+		}
+		if (this._megabas.stackableCards.length <= this._cardNumber - 1) {
+			this._megabas.log.error(`${this._baseObjName}: card number ${this._cardNumber} is not connected`);
+			return;
+		}
+		if (this._portType != LightingPortTypes.Output) {
+			this._megabas.log.error(`${this._baseObjName}: port type is not an output type`);
+			return;
+		}
+
+		const card = this._megabas.stackableCards[this._cardNumber - 1];
+		const port = card.dacOutputPorts[this._portNumber - 1];
+
+		// For good responsibility: set directly and then inform ioBroker
+		port.UpdateValue(voltage);
+		this._megabas.setStateAsync(port.objectName + ".voltage", voltage);
 	}
 }
 

@@ -36,14 +36,28 @@ class InputPort {
 	 * Defines the type of the input port
 	 */
 	private _portType: InputPortTypes;
+
 	/**
 	 * If the dry contact is closed
 	 */
 	private _valueDryContactClosed: boolean;
 	/**
+	 * If the dry contact is closed
+	 */
+	public get valueDryContactClosed(): boolean {
+		return this._valueDryContactClosed;
+	}
+
+	/**
 	 * The voltage detected in the input port
 	 */
 	private _valueVoltage: number;
+	/**
+	 * The voltage detected in the input port
+	 */
+	public get valueVoltage(): number {
+		return this._valueVoltage;
+	}
 
 	// Returns the name of the device object in ioBroker
 	public get objectName(): string {

@@ -49,6 +49,12 @@ class Megabas extends utils.Adapter {
         this.on("unload", this.onUnload.bind(this));
     }
     /**
+     * The available stackable cards
+     */
+    get stackableCards() {
+        return this._stackableCards;
+    }
+    /**
      * Is called when databases are connected and adapter received configuration.
      */
     async onReady() {
@@ -90,11 +96,10 @@ class Megabas extends utils.Adapter {
         this._stackableCards.forEach((card) => {
             card.SubscribeStates();
         });
-        // examples for the checkPassword/checkGroup functions
-        let result = await this.checkPasswordAsync("admin", "iobroker");
-        this.log.info("check user admin pw iobroker: " + result);
-        result = await this.checkGroupAsync("admin", "admin");
-        this.log.info("check group user admin group admin: " + result);
+        // Subscribe to object updates for the lighting devices
+        this._lightingDevices.forEach((device) => {
+            device.SubscribeStates();
+        });
         // start the actual adapter
         this._isRunning = true;
         this.setState("info.connection", true, true);
@@ -201,6 +206,25 @@ class Megabas extends utils.Adapter {
                 this.log.error(`${id}: Unknown property in state changed for stackable card ${selectedCard.objectName}`);
             }
         }
+        else if (splitId[2].startsWith("lightingDevice")) {
+            const deviceSplit = splitId[2].split(":", 2);
+            const deviceIndex = Number(deviceSplit[1]);
+            const lightingDevice = this._lightingDevices[deviceIndex];
+            if (splitId.length < 4) {
+                this.log.error(`${id}: Invalid state changed for lightingDevice ${lightingDevice.objectName}`);
+                return;
+            }
+            let splitId4 = null;
+            if (splitId.length > 4) {
+                splitId4 = splitId[4];
+            }
+            if (state) {
+                lightingDevice.SetState(id, splitId[3], splitId4, state === null || state === void 0 ? void 0 : state.val);
+            }
+            else {
+                lightingDevice.SetState(id, splitId[3], splitId4, null);
+            }
+        }
         else {
             this.log.error(`${id}: Unknown property state changed`);
             return;
@@ -242,6 +266,8 @@ class Megabas extends utils.Adapter {
                     }
                 });
             });
+            // Update the lighting devices
+            megabas._lightingDevices.forEach((device) => { device.UpdateDeviceStatus(); });
         }
         catch (error) {
             megabas.log.error(`${megabas.name}: Error updating I2C status: ${error}`);

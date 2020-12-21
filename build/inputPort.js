@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InputPort = void 0;
+exports.InputPortTypes = exports.InputPort = void 0;
 const megabasConstants_1 = require("./megabasConstants");
 var InputPortTypes;
 (function (InputPortTypes) {
@@ -11,6 +11,7 @@ var InputPortTypes;
     InputPortTypes["DryContact"] = "Dry contact (open or closed)";
     InputPortTypes["Counter"] = "Counter based contact";
 })(InputPortTypes || (InputPortTypes = {}));
+exports.InputPortTypes = InputPortTypes;
 /**
  * Defines an input port on a stackable card
  */
@@ -23,6 +24,18 @@ class InputPort {
         this._portType = InputPortTypes.NotSet;
         this._valueDryContactClosed = false;
         this._valueVoltage = 0;
+    }
+    /**
+     * If the dry contact is closed
+     */
+    get valueDryContactClosed() {
+        return this._valueDryContactClosed;
+    }
+    /**
+     * The voltage detected in the input port
+     */
+    get valueVoltage() {
+        return this._valueVoltage;
     }
     // Returns the name of the device object in ioBroker
     get objectName() {

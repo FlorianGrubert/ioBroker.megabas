@@ -41,7 +41,7 @@ class DacOutputPort {
      * Initializes the states in the ioBroker object model
      */
     async InitializeOutputPort() {
-        const channelBaseName = this._baseObjName + ".dacOutputPort:" + this._portNumber.toString();
+        const channelBaseName = this._baseObjName;
         await this._megabas.setObjectNotExistsAsync(channelBaseName, {
             type: "channel",
             common: {
@@ -85,12 +85,18 @@ class DacOutputPort {
             }
         }
     }
+    /**
+     * Sets the new value on the output port on the card
+     * @param newValue The new value to write to the output port
+     */
     UpdateValue(newValue) {
         if (newValue != this._currentVoltage) {
             if (newValue < 0) {
+                this._megabas.log.warn(`${this._baseObjName}: Value ${newValue} is not valid. Setting value to 0`);
                 newValue = 0;
             }
             if (newValue > 10000) {
+                this._megabas.log.warn(`${this._baseObjName}: Value ${newValue} is not valid. Setting value to 10000`);
                 newValue = 10000;
             }
             this._currentVoltage = newValue;
