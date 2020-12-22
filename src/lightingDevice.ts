@@ -605,6 +605,8 @@ class LightingDevice {
 		this._presencePorts.forEach((port) => {
 			if (port.IsValidPort()) {
 				presenceDetected = presenceDetected || port.GetDryContactClosed();
+			} else {
+				this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
 			}
 		});
 		this._megabas.log.silly(`${this._baseObjName}: Presence detected: ${presenceDetected}`);
@@ -615,8 +617,11 @@ class LightingDevice {
 		if (!this._presenceIsDetected && presenceDetected && this._brightnessPorts.length > 0) {
 			this._brightnessPorts.forEach((port) => {
 				if (port.IsValidPort()) {
+
 					isDark = isDark || port.GetVoltageValue() <= this._brightnessTreshold;
 					checkedBrightness = true;
+				} else {
+					this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
 				}
 			});
 
@@ -627,6 +632,8 @@ class LightingDevice {
 		if (presenceDetected != this._presenceIsDetected) {
 			this._presenceIsDetected = presenceDetected;
 			this._megabas.setStateAsync(this._baseObjName + ".presence_isDetected", presenceDetected);
+		}
+		if (presenceDetected) {
 			this._presenceLastSeen = new Date();
 			this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen",
 				this._presenceLastSeen.toISOString());
@@ -653,22 +660,29 @@ class LightingDevice {
 		this._switchPorts.forEach((port) => {
 			if (port.IsValidPort()) {
 				switchOn = switchOn || port.GetDryContactClosed();
+			} else {
+				this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
 			}
 		});
 		if (switchOn != this._switchIsOn) {
 			// Switch status changed: Update lighting
 			this._switchIsOn = switchOn;
-			this._megabas.setStateAsync(this._baseObjName + "switch_isOn", switchOn);
-
-			if (switchOn) {
-				targetVoltage = this._switchVoltage;
-			}
+			this._megabas.setStateAsync(this._baseObjName + ".switch_isOn", switchOn);
+		}
+		if (switchOn) {
+			targetVoltage = this._switchVoltage;
 		}
 		this._megabas.log.silly(`${this._baseObjName}: Switch status: ${switchOn}`);
 
 		// Set the voltage in the system
 		if (targetVoltage != this._lastVoltage) {
-			this._outputPorts.forEach((port) => { port.SetVoltageValue(targetVoltage); });
+			this._outputPorts.forEach((port) => {
+				if (port.IsValidPort()) {
+					port.SetVoltageValue(targetVoltage);
+				} else {
+					this._megabas.log.warn(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
+				}
+			});
 			this._lastVoltage = targetVoltage;
 		}
 	}

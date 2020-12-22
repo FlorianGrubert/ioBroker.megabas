@@ -114,6 +114,7 @@ class PortLink {
 			},
 			native: {},
 		});
+		this.SynchronizeState("cardNumber", 0);
 
 		let maxCount = 8;
 		switch (this._portType) {
@@ -139,6 +140,7 @@ class PortLink {
 			},
 			native: {},
 		});
+		this.SynchronizeState("portNumber", 0);
 	}
 
 	/**
@@ -148,6 +150,24 @@ class PortLink {
 		this._megabas.delObjectAsync(this._baseObjName + ".cardNumber");
 		this._megabas.delObjectAsync(this._baseObjName + ".portNumber");
 		this._megabas.delObjectAsync(this._baseObjName);
+	}
+
+	/**
+	 * Reads the content of the state from ioBroker
+	 * @param stateName Name of the state to read
+	 * @param defaultValue Default values to set if the state was not set
+	 */
+	private SynchronizeState(stateName: string, defaultValue: any): void {
+		this._megabas.getState(this._baseObjName + "." + stateName, (err, state) => {
+			if (err) {
+				this._megabas.log.error(`${this._baseObjName}: State "${stateName}" not found: ${err}`);
+			}
+			if (state) {
+				this.SetState(this._baseObjName + "." + stateName, stateName, state.val);
+			} else {
+				this.SetState(this._baseObjName + "." + stateName, stateName, defaultValue);
+			}
+		});
 	}
 
 	/**
@@ -271,8 +291,10 @@ class PortLink {
 
 		const card = this._megabas.stackableCards[this._cardNumber - 1];
 		const port = card.inputPorts[this._portNumber - 1];
+		const contactClosed = port.valueDryContactClosed;
+		this._megabas.log.silly(`${this._baseObjName}: dry contact ${port.objectName} closed: ${contactClosed}`);
 
-		return port.valueDryContactClosed;
+		return contactClosed;
 	}
 
 	/**
