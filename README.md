@@ -102,6 +102,12 @@ For later updates, the above procedure is not necessary. Just do the following:
 
 ## Changelog
 
+### 0.1.1
+
+-   (Florian Grubert) first working release with lighting devices.
+-   Basic functionality, only the port types for 0-10V and dry contact input ports are supported
+-   DAC output ports work but triac ports are not yet supported
+
 ### 0.0.1
 
 -   (Florian Grubert) initial release

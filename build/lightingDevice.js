@@ -14,6 +14,7 @@ class LightingDevice {
         this._brightnessPorts = new Array(0);
         this._lastVoltage = -1;
         this._isEnabled = false;
+        this._presenceDetectionEnabled = true;
         this._presenceVoltage = 10000;
         this._switchVoltage = 10000;
         this._offVoltage = 0;
@@ -34,6 +35,18 @@ class LightingDevice {
      */
     set isEnabled(value) {
         this._isEnabled = value;
+    }
+    /**
+     * If presence detection is enabled
+     */
+    get presenceDetectionEnabled() {
+        return this._presenceDetectionEnabled;
+    }
+    /**
+     * If presence detection is enabled
+     */
+    set presenceDetectionEnabled(value) {
+        this._presenceDetectionEnabled = value;
     }
     /**
      * The voltage to set if presence is detected
@@ -211,6 +224,19 @@ class LightingDevice {
             native: {},
         });
         this.SynchronizeState("presence_keepaliveSeconds", 0);
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presence_detectionEnabled", {
+            type: "state",
+            common: {
+                name: "If the presence detection is enabled (if false: only switch events will be processed)",
+                type: "boolean",
+                role: "switch.enable",
+                def: true,
+                read: true,
+                write: true,
+            },
+            native: {},
+        });
+        this.SynchronizeState("presence_detectionEnabled", true);
         await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".presence_isDetected", {
             type: "state",
             common: {
@@ -313,6 +339,7 @@ class LightingDevice {
         this._megabas.subscribeStates(this._baseObjName + ".presence_voltage");
         this._megabas.subscribeStates(this._baseObjName + ".switch_voltage");
         this._megabas.subscribeStates(this._baseObjName + ".off_voltage");
+        this._megabas.subscribeStates(this._baseObjName + ".presence_detectionEnabled");
         this._megabas.subscribeStates(this._baseObjName + ".presence_keepaliveSeconds");
         this._megabas.subscribeStates(this._baseObjName + ".brightness_treshold");
         this._megabas.subscribeStates(this._baseObjName + ".outputPorts_count");
@@ -382,6 +409,19 @@ class LightingDevice {
             }
             else {
                 this._isEnabled = false;
+            }
+        }
+        else if (state === "presence_detectionEnabled") {
+            if (val) {
+                if (typeof val === "boolean") {
+                    this._presenceDetectionEnabled = val;
+                }
+                else {
+                    this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
+                }
+            }
+            else {
+                this._presenceDetectionEnabled = false;
             }
         }
         else if (state === "presence_voltage") {
@@ -486,6 +526,7 @@ class LightingDevice {
                 const port = new portLink_1.PortLink(this._megabas, this, portType, portArray.length.toString());
                 port.InitializeIoBrokerObjects();
                 portArray.push(port);
+                port.SubscribeStates();
             }
         }
         else if (portArray.length > count) {
@@ -528,55 +569,57 @@ class LightingDevice {
             return;
         }
         let targetVoltage = this._offVoltage;
-        // Check the presence status
-        let presenceDetected = false;
-        this._presencePorts.forEach((port) => {
-            if (port.IsValidPort()) {
-                presenceDetected = presenceDetected || port.GetDryContactClosed();
-            }
-            else {
-                this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
-            }
-        });
-        this._megabas.log.silly(`${this._baseObjName}: Presence detected: ${presenceDetected}`);
-        let isDark = false;
-        let checkedBrightness = false;
-        // Evaluate brightness only if presence is detected new
-        if (!this._presenceIsDetected && presenceDetected && this._brightnessPorts.length > 0) {
-            this._brightnessPorts.forEach((port) => {
+        if (this._presenceDetectionEnabled) {
+            // Check the presence status
+            let presenceDetected = false;
+            this._presencePorts.forEach((port) => {
                 if (port.IsValidPort()) {
-                    isDark = isDark || port.GetVoltageValue() <= this._brightnessTreshold;
-                    checkedBrightness = true;
+                    presenceDetected = presenceDetected || port.GetDryContactClosed();
                 }
                 else {
                     this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
                 }
             });
-            this._megabas.log.silly(`${this._baseObjName}: Checked brightness: ${checkedBrightness} Is dark: ${isDark}`);
-        }
-        // Update status in ioBroker
-        if (presenceDetected != this._presenceIsDetected) {
-            this._presenceIsDetected = presenceDetected;
-            this._megabas.setStateAsync(this._baseObjName + ".presence_isDetected", presenceDetected);
-        }
-        if (presenceDetected) {
-            this._presenceLastSeen = new Date();
-            this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen", this._presenceLastSeen.toISOString());
-        }
-        if (checkedBrightness) {
-            if (isDark) {
+            this._megabas.log.silly(`${this._baseObjName}: Presence detected: ${presenceDetected}`);
+            let isDark = false;
+            let checkedBrightness = false;
+            // Evaluate brightness only if presence is detected new
+            if (!this._presenceIsDetected && presenceDetected && this._brightnessPorts.length > 0) {
+                this._brightnessPorts.forEach((port) => {
+                    if (port.IsValidPort()) {
+                        isDark = isDark || port.GetVoltageValue() <= this._brightnessTreshold;
+                        checkedBrightness = true;
+                    }
+                    else {
+                        this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
+                    }
+                });
+                this._megabas.log.silly(`${this._baseObjName}: Checked brightness: ${checkedBrightness} Is dark: ${isDark}`);
+            }
+            // Update status in ioBroker
+            if (presenceDetected != this._presenceIsDetected) {
+                this._presenceIsDetected = presenceDetected;
+                this._megabas.setStateAsync(this._baseObjName + ".presence_isDetected", presenceDetected);
+            }
+            if (presenceDetected) {
+                this._presenceLastSeen = new Date();
+                this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen", this._presenceLastSeen.toISOString());
+            }
+            if (checkedBrightness) {
+                if (isDark) {
+                    // Check if the presence was detected within the time with the timeout
+                    const difference = (Date.now() - this._presenceLastSeen.getTime()) / 1000;
+                    if (difference <= this._presenceKeepAliveSeconds) {
+                        targetVoltage = this._presenceVoltage;
+                    }
+                }
+            }
+            else {
                 // Check if the presence was detected within the time with the timeout
                 const difference = (Date.now() - this._presenceLastSeen.getTime()) / 1000;
                 if (difference <= this._presenceKeepAliveSeconds) {
                     targetVoltage = this._presenceVoltage;
                 }
-            }
-        }
-        else {
-            // Check if the presence was detected within the time with the timeout
-            const difference = (Date.now() - this._presenceLastSeen.getTime()) / 1000;
-            if (difference <= this._presenceKeepAliveSeconds) {
-                targetVoltage = this._presenceVoltage;
             }
         }
         // Check switch status: Switch wins always
