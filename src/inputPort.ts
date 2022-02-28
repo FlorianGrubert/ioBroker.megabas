@@ -265,7 +265,7 @@ class InputPort {
 		if (this._portType === InputPortTypes.DryContact) {
 			if (this._valueDryContactClosed != dryContactStatus) {
 				this._valueDryContactClosed = dryContactStatus;
-				this._megabas.setStateAsync(this._baseObjName + ".dryContactClosed", this._valueDryContactClosed);
+				this._megabas.setStateAsync(this._baseObjName + ".dryContactClosed", this._valueDryContactClosed, true);
 			}
 		} else {
 			if (this._portType === InputPortTypes.Voltage) {
@@ -273,7 +273,7 @@ class InputPort {
 				const voltage = i2cBus.readWordSync(this._card.hwBaseAddress, hwAddress);
 				if (this._valueVoltage != voltage) {
 					this._valueVoltage = voltage;
-					this._megabas.setStateAsync(this._baseObjName + ".voltage", this._valueVoltage);
+					this._megabas.setStateAsync(this._baseObjName + ".voltage", this._valueVoltage, true);
 				}
 			}
 		}

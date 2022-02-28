@@ -102,6 +102,11 @@ For later updates, the above procedure is not necessary. Just do the following:
 
 ## Changelog
 
+### 0.1.2
+
+-   Writing readonly values with ack flag to prevent warnings
+
+
 ### 0.1.1
 
 -   (Florian Grubert) first working release with lighting devices.

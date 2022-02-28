@@ -599,11 +599,11 @@ class LightingDevice {
             // Update status in ioBroker
             if (presenceDetected != this._presenceIsDetected) {
                 this._presenceIsDetected = presenceDetected;
-                this._megabas.setStateAsync(this._baseObjName + ".presence_isDetected", presenceDetected);
+                this._megabas.setStateAsync(this._baseObjName + ".presence_isDetected", presenceDetected, true);
             }
             if (presenceDetected) {
                 this._presenceLastSeen = new Date();
-                this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen", this._presenceLastSeen.toISOString());
+                this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen", this._presenceLastSeen.toISOString(), true);
             }
             if (checkedBrightness) {
                 if (isDark) {
@@ -635,7 +635,7 @@ class LightingDevice {
         if (switchOn != this._switchIsOn) {
             // Switch status changed: Update lighting
             this._switchIsOn = switchOn;
-            this._megabas.setStateAsync(this._baseObjName + ".switch_isOn", switchOn);
+            this._megabas.setStateAsync(this._baseObjName + ".switch_isOn", switchOn, true);
         }
         if (switchOn) {
             targetVoltage = this._switchVoltage;

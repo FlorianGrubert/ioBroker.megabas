@@ -156,7 +156,7 @@ class PortLink {
                     if (val < 0 || val > 8) {
                         this._megabas.log.error(`${fullId}: ${val} is an invalid index for a stackable card. Setting card number to 0`);
                         this._cardNumber = 0;
-                        this._megabas.setStateAsync(this._baseObjName + ".cardNumber", 0);
+                        this._megabas.setStateAsync(this._baseObjName + ".cardNumber", 0, true);
                     }
                     else {
                         this._cardNumber = val;
@@ -180,7 +180,7 @@ class PortLink {
                     if (val < 0 || val > maxIdx) {
                         this._megabas.log.error(`${fullId}: ${val} is an invalid index for ${this._portType}. Setting port number to 0`);
                         this._portNumber = 0;
-                        this._megabas.setStateAsync(this._baseObjName + ".portNumber", 0);
+                        this._megabas.setStateAsync(this._baseObjName + ".portNumber", 0, true);
                     }
                     else {
                         this._portNumber = val;
@@ -295,7 +295,7 @@ class PortLink {
         const port = card.dacOutputPorts[this._portNumber - 1];
         // For good responsibility: set directly and then inform ioBroker
         port.UpdateValue(voltage);
-        this._megabas.setStateAsync(port.objectName + ".voltage", voltage);
+        this._megabas.setStateAsync(port.objectName + ".voltage", voltage, true);
     }
 }
 exports.PortLink = PortLink;
