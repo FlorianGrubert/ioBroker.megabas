@@ -172,6 +172,18 @@ class Megabas extends utils.Adapter {
             this.log.error(`${id}: Invalid state changed received`);
             return;
         }
+        if (state) {
+            // The state was changed
+            this.log.debug(`state ${id} changing to: ${state.val} (ack = ${state.ack}) ...`);
+            if (state.ack) {
+                // this was handled already
+                return;
+            }
+        }
+        else {
+            // The state was deleted
+            this.log.debug(`state ${id} deleting...`);
+        }
         if (splitId[2].startsWith("stackableCard")) {
             const cardSplit = splitId[2].split(":", 2);
             const cardIndex = Number(cardSplit[1]);
@@ -231,7 +243,7 @@ class Megabas extends utils.Adapter {
         }
         if (state) {
             // The state was changed
-            this.log.debug(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+            this.log.debug(`state ${id} changed to: ${state.val} (ack = ${state.ack})`);
         }
         else {
             // The state was deleted

@@ -402,6 +402,7 @@ class LightingDevice {
             if (val) {
                 if (typeof val === "boolean") {
                     this._isEnabled = val;
+                    this._megabas.setStateAsync(fullId, { val: val, ack: true }); // confirm value
                 }
                 else {
                     this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
@@ -409,12 +410,14 @@ class LightingDevice {
             }
             else {
                 this._isEnabled = false;
+                this._megabas.setStateAsync(fullId, { val: false, ack: true }); // confirm value
             }
         }
         else if (state === "presence_detectionEnabled") {
             if (val) {
                 if (typeof val === "boolean") {
                     this._presenceDetectionEnabled = val;
+                    this._megabas.setStateAsync(fullId, { val: val, ack: true }); // confirm value
                 }
                 else {
                     this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
@@ -422,20 +425,30 @@ class LightingDevice {
             }
             else {
                 this._presenceDetectionEnabled = false;
+                this._megabas.setStateAsync(fullId, { val: false, ack: true }); // confirm value
             }
         }
         else if (state === "presence_voltage") {
-            this.SetStateNumber(val, 0, (value) => { this._presenceVoltage = this.ValidateVoltage(value); }, () => {
+            this.SetStateNumber(val, 0, (value) => {
+                this._presenceVoltage = this.ValidateVoltage(value);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
+            }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
         }
         else if (state === "switch_voltage") {
-            this.SetStateNumber(val, 0, (value) => { this._switchVoltage = this.ValidateVoltage(value); }, () => {
+            this.SetStateNumber(val, 0, (value) => {
+                this._switchVoltage = this.ValidateVoltage(value);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
+            }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
         }
         else if (state === "off_voltage") {
-            this.SetStateNumber(val, 0, (value) => { this._offVoltage = this.ValidateVoltage(value); }, () => {
+            this.SetStateNumber(val, 0, (value) => {
+                this._offVoltage = this.ValidateVoltage(value);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
+            }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
         }
@@ -443,22 +456,28 @@ class LightingDevice {
             this.SetStateNumber(val, 0, (value) => {
                 if (value >= 0) {
                     this._presenceKeepAliveSeconds = value;
+                    this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
                 }
                 else {
                     this._presenceKeepAliveSeconds = 0;
+                    this._megabas.setStateAsync(fullId, { val: 0, ack: true }); // confirm value
                 }
             }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
         }
         else if (state === "brightness_treshold") {
-            this.SetStateNumber(val, 0, (value) => { this._brightnessTreshold = this.ValidateVoltage(value); }, () => {
+            this.SetStateNumber(val, 0, (value) => {
+                this._brightnessTreshold = this.ValidateVoltage(value);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
+            }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
         }
         else if (state === "outputPorts_count") {
             this.SetStateNumber(val, 0, (value) => {
                 this.SetStateUpdateArrayCount(value, this._outputPorts, portLink_1.LightingPortTypes.Output);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
             }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
@@ -466,6 +485,7 @@ class LightingDevice {
         else if (state === "switchPorts_count") {
             this.SetStateNumber(val, 0, (value) => {
                 this.SetStateUpdateArrayCount(value, this._switchPorts, portLink_1.LightingPortTypes.Switch);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
             }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
@@ -473,6 +493,7 @@ class LightingDevice {
         else if (state === "presencePorts_count") {
             this.SetStateNumber(val, 0, (value) => {
                 this.SetStateUpdateArrayCount(value, this._presencePorts, portLink_1.LightingPortTypes.Presence);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
             }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
@@ -480,6 +501,7 @@ class LightingDevice {
         else if (state === "brightnessPorts_count") {
             this.SetStateNumber(val, 0, (value) => {
                 this.SetStateUpdateArrayCount(value, this._brightnessPorts, portLink_1.LightingPortTypes.Brightness);
+                this._megabas.setStateAsync(fullId, { val: value, ack: true }); // confirm value
             }, () => {
                 this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
             });
@@ -605,6 +627,8 @@ class LightingDevice {
                 this._presenceLastSeen = new Date();
                 this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen", this._presenceLastSeen.toISOString(), true);
             }
+            // TODO: Workaround: as checkedBrightness contains a logical bug, we disable the function for a while
+            checkedBrightness = false;
             if (checkedBrightness) {
                 if (isDark) {
                     // Check if the presence was detected within the time with the timeout
