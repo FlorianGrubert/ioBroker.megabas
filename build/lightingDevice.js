@@ -23,6 +23,8 @@ class LightingDevice {
         this._presenceKeepAliveSeconds = 120;
         this._switchIsOn = false;
         this._brightnessTreshold = 4000;
+        this._lightIsOn = false;
+        this._lastBrightnessMinValue = 0;
     }
     /**
      * If this lighting device is enabled
@@ -125,6 +127,12 @@ class LightingDevice {
      */
     set brightnessTreshold(value) {
         this._brightnessTreshold = this.ValidateVoltage(value);
+    }
+    /**
+     * If the light is currently switched on
+     */
+    get lightIsOn() {
+        return this._lightIsOn;
     }
     // Returns the name of the device object in ioBroker
     get objectName() {
@@ -330,6 +338,19 @@ class LightingDevice {
             native: {},
         });
         this.SynchronizeState("brightnessPorts_count", 0);
+        await this._megabas.setObjectNotExistsAsync(this._baseObjName + ".light_isOn", {
+            type: "state",
+            common: {
+                name: "Light is on",
+                type: "boolean",
+                role: "switch.enable",
+                def: true,
+                read: true,
+                write: false,
+            },
+            native: {},
+        });
+        this.SynchronizeState("light_isOn", false);
     }
     /**
      * Subscribes the relevant properties to changes from ioBroker
@@ -346,6 +367,7 @@ class LightingDevice {
         this._megabas.subscribeStates(this._baseObjName + ".switchPorts_count");
         this._megabas.subscribeStates(this._baseObjName + ".presencePorts_count");
         this._megabas.subscribeStates(this._baseObjName + ".brightnessPorts_count");
+        this._megabas.subscribeStates(this._baseObjName + ".light_isOn");
         this._outputPorts.forEach((port) => { port.SubscribeStates(); });
         this._switchPorts.forEach((port) => { port.SubscribeStates(); });
         this._presencePorts.forEach((port) => { port.SubscribeStates(); });
@@ -526,6 +548,21 @@ class LightingDevice {
                 port.SetState(fullId, nextState, val);
             }
         }
+        else if (state === "light_isOn") {
+            if (val) {
+                if (typeof val === "boolean") {
+                    this._lightIsOn = val;
+                    this._megabas.setStateAsync(fullId, { val: val, ack: true }); // confirm value
+                }
+                else {
+                    this._megabas.log.error(`${fullId}: Value ${val} (${typeof val}) is an invalid type`);
+                }
+            }
+            else {
+                this._lightIsOn = false;
+                this._megabas.setStateAsync(fullId, { val: false, ack: true }); // confirm value
+            }
+        }
         else {
             this._megabas.log.error(`${fullId}: Property ${state} was not found to set value ${val}`);
         }
@@ -603,20 +640,24 @@ class LightingDevice {
                 }
             });
             this._megabas.log.silly(`${this._baseObjName}: Presence detected: ${presenceDetected}`);
-            let isDark = false;
-            let checkedBrightness = false;
-            // Evaluate brightness only if presence is detected new
-            if (!this._presenceIsDetected && presenceDetected && this._brightnessPorts.length > 0) {
+            if (!this._lightIsOn && this._brightnessPorts.length > 0) {
+                // check brightness only if the light is not on currently and there are brightness ports configured 
+                let currentBrightness = 0;
                 this._brightnessPorts.forEach((port) => {
                     if (port.IsValidPort()) {
-                        isDark = isDark || port.GetVoltageValue() <= this._brightnessTreshold;
-                        checkedBrightness = true;
+                        if (currentBrightness <= 0) {
+                            currentBrightness = port.GetVoltageValue();
+                        }
+                        else {
+                            Math.min(currentBrightness, port.GetVoltageValue());
+                        }
                     }
                     else {
                         this._megabas.log.debug(`${this._baseObjName}: Port ${port.objectName} (card: ${port.cardNumber} port: ${port.portNumber}) is not valid`);
                     }
                 });
-                this._megabas.log.silly(`${this._baseObjName}: Checked brightness: ${checkedBrightness} Is dark: ${isDark}`);
+                this._lastBrightnessMinValue = currentBrightness;
+                this._megabas.log.silly(`${this._baseObjName}: Relevant brightness ${this._lastBrightnessMinValue}`);
             }
             // Update status in ioBroker
             if (presenceDetected != this._presenceIsDetected) {
@@ -627,18 +668,8 @@ class LightingDevice {
                 this._presenceLastSeen = new Date();
                 this._megabas.setStateAsync(this._baseObjName + ".presence_lastSeen", this._presenceLastSeen.toISOString(), true);
             }
-            // TODO: Workaround: as checkedBrightness contains a logical bug, we disable the function for a while
-            checkedBrightness = false;
-            if (checkedBrightness) {
-                if (isDark) {
-                    // Check if the presence was detected within the time with the timeout
-                    const difference = (Date.now() - this._presenceLastSeen.getTime()) / 1000;
-                    if (difference <= this._presenceKeepAliveSeconds) {
-                        targetVoltage = this._presenceVoltage;
-                    }
-                }
-            }
-            else {
+            if (this._brightnessTreshold <= 0 || this._lastBrightnessMinValue <= this._brightnessTreshold) {
+                // Either no brightness check was configured or the minimum brightness was too dark
                 // Check if the presence was detected within the time with the timeout
                 const difference = (Date.now() - this._presenceLastSeen.getTime()) / 1000;
                 if (difference <= this._presenceKeepAliveSeconds) {
@@ -676,6 +707,11 @@ class LightingDevice {
                 }
             });
             this._lastVoltage = targetVoltage;
+        }
+        // Inform ioBroker of the light status changed
+        if (this._lightIsOn !== (targetVoltage > this._offVoltage)) {
+            this._lightIsOn = (targetVoltage > this._offVoltage);
+            this._megabas.setStateAsync(this._baseObjName + ".light_isOn", this._lightIsOn, true);
         }
     }
 }

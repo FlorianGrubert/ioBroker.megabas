@@ -1,15 +1,19 @@
 {
 	"common": {
 		"name": "megabas",
-		"version": "0.1.2",
+		"version": "0.1.3",
 		"news": {
+			"0.1.3": {
+				"en": "Started fixing ACK handling, fixed brightness handling",
+				"de": "Angefangen ACK Verarbeitung zu fixen, Behandlung Helligkeitswerte gefixt"
+			},
 			"0.1.2": {
 				"en": "Writing readonly values with ack flag to prevent warnings",
 				"de": "Schreibe ReadOnly Werte mit ACK Flag um Warnungen zu verhindern"
 			},
 			"0.1.1": {
 				"en": "first runable version",
-				"de": "Erste, lauffähige version"
+				"de": "Erste lauffähige version"
 			},
 			"0.0.1": {
 				"en": "initial release",
